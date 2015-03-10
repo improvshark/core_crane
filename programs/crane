@@ -1,0 +1,169 @@
+
+
+
+
+local peripheralType = "openblocks_magnet"
+local mag = nil
+
+local x,y,z
+x=0
+y=1
+z=0
+
+onBtn =   {x1=37,y1=2,x2=38,y2=3,color=colors.green}
+offBtn =  {x1=37,y1=5,x2=38,y2=6,color=colors.red}
+
+upBtn =   {x1=28,y1=4,x2=33,y2=6,color=4}
+downBtn = {x1=28,y1=8,x2=33,y2=10,color=4}
+
+forwardBtn =  {x1=9,y1=2,x2=16,y2=4,color=colors.blue}
+backBtn =     {x1=9,y1=10,x2=16,y2=12,color=colors.blue}
+leftBtn =     {x1=3,y1=5,x2=5,y2=9,color=colors.blue}
+rightBtn =    {x1=20,y1=5,x2=22,y2=9,color=colors.blue}
+
+
+function findCrane()
+  if peripheral.getType("left") == peripheralType then
+    return "left"
+  elseif peripheral.getType("right") == peripheralType then
+    return "right"
+  end
+  return false
+end
+
+function move(dir)
+  --local status, x,y,z = pcall(mag.getPosition)
+  if status == false then return false end
+
+  --print("before ".." x:"..x.." y:"..y.." z:"..z)
+  if dir == "up" then  y = y + 1.0
+  elseif dir == "down" then y = y-1.0
+  elseif dir == "forward" then z = z+1.0
+  elseif dir == "back" then z = z-1.0
+  elseif dir == "right" then x = x-1.0
+  elseif dir == "left" then x = x+1.0
+  else return false end
+
+  local status, msg = pcall(mag.setTarget,x,y,z)
+  --print("after ".." x:"..x.." y:"..y.." z:"..z)
+end
+
+function activate()
+
+  local status, msg = pcall(mag.activate)
+  if status == false then
+    --print(msg)
+  end
+  local status, x,y,z = pcall(mag.getPosition)
+  local status, msg = pcall(mag.setTarget,0,1,0)
+
+end
+function deactivate()
+  local status, msg = pcall(mag.deactivate)
+  if status == false then
+    --print(msg)
+  end
+end
+
+function toggleMag()
+  local status, msg = pcall(mag.toggle)
+  if status == false then
+    --print(msg)
+  end
+end
+
+function keyboardInput()
+
+end
+
+function drawButton(btn)
+  paintutils.drawFilledBox(btn.x1,btn.y1,btn.x2,btn.y2,btn.color)
+end
+
+function posInButton(btn, xPos, yPos)
+  if btn == nil or xPos == nill or yPos == nill then
+    return false
+  end
+
+  if xPos >= btn.x1 and xPos <= btn.x2 and yPos >= btn.y1 and yPos <= btn.y2 then
+    return true
+  else
+    return false
+  end
+end
+
+function pollInput()
+
+  local event, button, xPos,yPos = os.pullEvent()
+
+  if event == "key" then
+    key = keys.getName(button)
+    --print(tostring(scancode).." was pressed. ")
+
+    if key == "up" then move("forward")
+    elseif key == "down" then move("back")
+    elseif key == "left" then move("left")
+    elseif key == "right" then move("right")
+    elseif key == "home" then move("up")
+    elseif key == "end" then move("down")
+    elseif key == "insert" then activate()
+    elseif key == "delete" then deactivate()
+    elseif key == "space" then toggleMag() end
+  else
+
+    --print("Mouse button clicked: ", button, " => Click Position X: ", xPos, " => Click Position Y: ", yPos)
+
+    if posInButton(upBtn, xPos, yPos) then move("up")
+    elseif posInButton(downBtn, xPos, yPos) then move("down")
+
+    elseif posInButton(forwardBtn, xPos, yPos) then move("forward")
+    elseif posInButton(backBtn, xPos, yPos) then move("back")
+    elseif posInButton(rightBtn, xPos, yPos) then move("right")
+    elseif posInButton(leftBtn, xPos, yPos) then move("left")
+
+    elseif posInButton(onBtn, xPos, yPos) then activate()
+    elseif posInButton(offBtn, xPos, yPos) then deactivate() end
+
+  end
+
+end
+
+function draw()
+  drawButton(upBtn)
+  drawButton(downBtn)
+
+  drawButton(onBtn)
+  drawButton(offBtn)
+
+  drawButton(forwardBtn)
+  drawButton(backBtn)
+  drawButton(leftBtn)
+  drawButton(rightBtn)
+end
+
+
+local done = false
+function main()
+    term.clear()
+    draw()
+    --image = paintutils.loadImage("/user/programs/craneGui")
+    --paintutils.drawImage(image, 1, 1)
+
+  while not done do
+    pollInput()
+    draw()
+  end
+end
+
+
+
+side = findCrane()
+
+if side ~= false then
+  mag = peripheral.wrap(side)
+  print ("magnet is on side: " .. side)
+  main()
+else
+  print("cant find magnet")
+  done = true
+end
