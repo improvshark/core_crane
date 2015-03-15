@@ -1,0 +1,114 @@
+
+
+
+local peripheralType = "turtlesensorenvironment"
+local sensor = nil
+local arg = {...}
+
+
+function findSensor()
+  if peripheral.getType("left") == peripheralType then
+    return "left"
+  elseif peripheral.getType("right") == peripheralType then
+    return "right"
+  end
+  return false
+end
+
+
+function getMobPosition(id)
+  local status, mob = pcall(sensor.getMobData,id)
+  if status == false then return nil end
+  return vector.new(mob.position.x, mob.position.y, mob.position.z)
+end
+-- returns a positon or nil if not found
+function getMob()
+  local status, mobIds = pcall(sensor.getMobIds)
+  if status == false then return nil end
+
+  if #mobIds == 0 then return nil end
+
+
+  smallest = getMobPosition(mobIds[1])
+  if smallest == nil then return nil end
+
+  for i=1, #mobIds do
+
+    if getMobPosition(mobIds[1]):length() < smallest:length() then
+      smallest = getMobPosition(mobIds[1])
+    end
+  end
+  return smallest
+end
+
+function round(num, idp)
+  local mult = 10^(idp or 0)
+  return math.floor(num * mult + 0.5) / mult
+end
+
+
+function mainLoop()
+  while not done do
+    theMob = getMob()
+    if theMob == nil then
+      print("found nothing")
+      sleep(1)
+    else
+
+      print ("im at "..textutils.serialize(pos.getPosition()) )
+      print("ima kill it! ".. textutils.serialize(theMob))
+      x = round(theMob.x,0)
+      y = round(theMob.y,0)
+      z = round(theMob.z,0)
+      print ("floored x:"..x.. " y:"..y.." z:"..z )
+
+      nav.gotoX(pos.getX()+x, true)
+      nav.gotoZ(pos.getZ()+z, true)
+      nav.gotoY(pos.getY()+y, true)
+
+      while turtle.attackUp() do end
+      while turtle.attackDown() do end
+      while turtle.attack() do end
+
+    end
+  end
+end
+
+function usage()
+  print("killIt <Direction facing>")
+end
+
+
+pos.handle.gravel = function(side)
+	print('handle gravel not really')
+  return true
+
+end
+
+
+side = findSensor()
+
+if side ~= false then
+  sensor = peripheral.wrap(side)
+  print ("sensor is on side: " .. side)
+
+  if arg[1] == 'north' then
+    pos.setLocation(0,0,0,2)
+    mainLoop()
+  elseif arg[1] == 'east' then
+    pos.setLocation(0,0,0,3)
+    mainLoop()
+  elseif arg[1] == 'south' then
+    pos.setLocation(0,0,0,0)
+    mainLoop()
+  elseif arg[1] == 'west' then
+    pos.setLocation(0,0,0,1)
+    mainLoop()
+  else
+    usage()
+  end
+
+else
+  print("cant find sensor")
+  done = true
+end
